@@ -7,11 +7,13 @@ import matplotlib
 import tempfile
 import os
 import numpy as np
+import psutil
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 logger = logging.getLogger(__name__)
+proc = psutil.Process(os.getpid())
 
 MRMS_URL = (
     "https://mrms.ncep.noaa.gov/2D/ReflectivityAtLowestAltitude/"
@@ -19,11 +21,18 @@ MRMS_URL = (
 )
 
 
+# Log memory usage at various steps
+def log_mem(step: str):
+    mem = proc.memory_info().rss / (1024**2)  # in MiB
+    logger.info(f"[MEMORY] {step}: {mem:.1f} MiB")
+
+
 # Fetch and decode the MRMS radar data
 async def fetch_and_decode():
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.get(MRMS_URL)
         resp.raise_for_status()
+    log_mem("after download")
     compressed = io.BytesIO(resp.content)
     logger.info(
         "fetch_and_decode: downloaded %d bytes, compressed=%r",
@@ -32,9 +41,11 @@ async def fetch_and_decode():
     )
     with gzip.open(compressed, "rb") as f:
         data = f.read()
+    log_mem("after decompress to raw bytes")
 
     # Write the decompressed data to a .grib2 file
     tmp = tempfile.NamedTemporaryFile(suffix=".grib2", delete=False)
+    log_mem("after write temp .grib2")
 
     try:
         tmp.write(data)
@@ -44,13 +55,16 @@ async def fetch_and_decode():
 
         # Open the GRIB2 file with xarray
         ds = xr.open_dataset(tmp.name, engine="cfgrib")
+        log_mem("after open_dataset")
         # Load all data into memory
         refl = ds["unknown"].data
         refl = np.where(refl < 0, np.nan, refl)
+        log_mem("after loading reflectivity array")
         max_dbz = np.nanmax(refl)
         logger.info(f"Maximum reflectivity in this slice: {max_dbz:.1f} dBZ")
         lats = ds["latitude"].data
         lons = ds["longitude"].data
+        log_mem("after loading coords")
         logger.info(
             "Loaded from disk: refl=%s, lats=%s, lons=%s",
             refl.shape,
