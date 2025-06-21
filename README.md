@@ -19,7 +19,6 @@ A Dockerized FastAPI service that fetches the latest MRMS Reflectivity-at-Lowest
 
 - **Git** (to clone this repo)
 - **Docker** & **Docker Compose**
-- **(Optional, for local dev)** Miniconda or Anaconda
 
 ---
 
