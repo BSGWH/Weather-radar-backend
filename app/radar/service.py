@@ -8,6 +8,9 @@ import tempfile
 import os
 import numpy as np
 import psutil
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
+from PIL import Image
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -79,11 +82,21 @@ async def fetch_and_decode():
 
 # Render the radar data as a PNG image
 async def render_png(refl, lats, lons):
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.pcolormesh(lons, lats, refl, cmap="turbo", vmin=0, vmax=75)
-    ax.set_axis_off()
+    # fig, ax = plt.subplots(figsize=(8, 6))
+    # ax.pcolormesh(lons, lats, refl, cmap="turbo", vmin=0, vmax=75)
+    # ax.set_axis_off()
+    # buf = io.BytesIO()
+    # plt.savefig(buf, bbox_inches="tight", pad_inches=0, transparent=True)
+    # buf.seek(0)
+    # plt.close(fig)
+    # return buf
+    norm = mcolors.Normalize(vmin=0, vmax=75)
+    cmap = cm.get_cmap("turbo")
+    rgba = cmap(norm(refl))  # shape (ny, nx, 4), float32
+    img = (rgba * 255).astype("uint8")  # convert to uint8
+
+    # Pillow to save PNG
     buf = io.BytesIO()
-    plt.savefig(buf, bbox_inches="tight", pad_inches=0, transparent=True)
+    Image.fromarray(img).save(buf, format="PNG")
     buf.seek(0)
-    plt.close(fig)
     return buf
