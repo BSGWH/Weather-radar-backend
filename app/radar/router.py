@@ -38,6 +38,42 @@ async def radar_image():
         png_data = png.read()
         log_mem("after read png data")
         cache[cache_key] = (png_data, now)
+        # Calculate bounds for caching
+        bounds = {
+            "min_lat": float(lats.min()),
+            "max_lat": float(lats.max()),
+            "min_lon": float(lons.min()),
+            "max_lon": float(lons.max()),
+        }
+        cache["radar_bounds"] = (bounds, now)
         return Response(content=png_data, media_type="image/png")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/bounds")
+async def radar_bounds():
+    cache_key = "radar_bounds"
+    now = datetime.now()
+
+    # Check cache first
+    if cache_key in cache:
+        cached_bounds, timestamp = cache[cache_key]
+        if now - timestamp < timedelta(minutes=2):
+            logger.info("Returning cached radar bounds")
+            return cached_bounds
+
+    # If not in cache or expired, fetch fresh data
+    logger.info("Fetching radar data to compute bounds")
+    try:
+        refl, lats, lons = await fetch_and_decode()
+        bounds = {
+            "min_lat": float(lats.min()),
+            "max_lat": float(lats.max()),
+            "min_lon": float(lons.min()),
+            "max_lon": float(lons.max()),
+        }
+        cache[cache_key] = (bounds, now)
+        return bounds
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
