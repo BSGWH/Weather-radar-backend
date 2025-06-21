@@ -68,6 +68,13 @@ async def fetch_and_decode():
         lats = ds["latitude"].data
         lons = ds["longitude"].data
         log_mem("after loading coords")
+        # Adjust longitudes to be in the range [-180, 180]
+        lons = np.where(lons > 180, lons - 360, lons)
+        min_lat, max_lat = float(np.nanmin(lats)), float(np.nanmax(lats))
+        min_lon, max_lon = float(np.nanmin(lons)), float(np.nanmax(lons))
+        logger.info(
+            f"Dataset bounds → lat: {min_lat:.8f} … {max_lat:.8f},  lon: {min_lon:.8f} … {max_lon:.8f}"
+        )
         logger.info(
             "Loaded from disk: refl=%s, lats=%s, lons=%s",
             refl.shape,

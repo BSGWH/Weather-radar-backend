@@ -3,6 +3,7 @@ from app.radar.router import router as radar_router
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )

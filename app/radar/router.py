@@ -1,13 +1,19 @@
-from fastapi import Response, HTTPException, APIRouter
+from fastapi import Response, HTTPException, APIRouter, Request
 from app.radar.service import fetch_and_decode, render_png
 from functools import lru_cache
 from datetime import datetime, timedelta
 import psutil
 import logging
 import os
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/radar", tags=["radar"])
+limiter = Limiter(key_func=get_remote_address)
+
+
 cache = {}
 
 proc = psutil.Process(os.getpid())
@@ -19,7 +25,8 @@ def log_mem(step: str):
 
 
 @router.get("/radar.png")
-async def radar_image():
+@limiter.limit("10/minute")
+async def radar_image(request: Request):
     cache_key = "radar_image"
     now = datetime.now()
 

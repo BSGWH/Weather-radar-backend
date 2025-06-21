@@ -16,3 +16,5 @@ dependencies:
   - psutil
   - pip:
       - python-multipart
+      - slowapi
+      - limits
