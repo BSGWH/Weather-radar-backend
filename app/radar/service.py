@@ -8,7 +8,6 @@ import tempfile
 import os
 import numpy as np
 import psutil
-import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 from PIL import Image
 
@@ -98,7 +97,7 @@ async def render_png(refl, lats, lons):
     # plt.close(fig)
     # return buf
     norm = mcolors.Normalize(vmin=0, vmax=75)
-    cmap = cm.get_cmap("turbo")
+    cmap = matplotlib.colormaps["turbo"]
     rgba = cmap(norm(refl))  # shape (ny, nx, 4), float32
     img = (rgba * 255).astype("uint8")  # convert to uint8
 
